@@ -25,7 +25,7 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
-          accept-android-sdk-licenses: 'yes'
+          accept-android-sdk-licenses: true
 
       - name: Install Android platform and build tools
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"

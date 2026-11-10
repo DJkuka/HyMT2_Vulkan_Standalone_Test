@@ -87,3 +87,7 @@ GGUF **не копируется** в каталог приложения. Пр�
 - Vulkan backend собран и связан с Android `libvulkan.so`, но реальная работоспособность драйвера Adreno 610 и ускорение ещё должны быть проверены на планшете.
 - На мобильном GPU часть модели размещается в общей памяти устройства. Начинай с 2 слоёв и context 2048. Не начинай с 24 слоёв или большого контекста.
 - AAR содержит upstream notice и отдельный файл лицензии в `native-runtime/UPSTREAM-LICENSE`.
+
+## Исправление GitHub Actions v12
+
+Для `android-actions/setup-android@v4` параметр `accept-android-sdk-licenses` задан YAML-boolean `true`, а не строкой `yes`. Action валидирует значение только как `true/false`; поэтому предыдущий workflow завершался ошибкой разбора input после скачивания command-line tools. Установку `platform-tools` и версию command-line tools оставили без изменений.

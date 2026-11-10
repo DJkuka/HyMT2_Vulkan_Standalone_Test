@@ -13,3 +13,7 @@
 Runtime artifact details: upstream llama-android commit `9f5469fd9fa7ea7bc7b01801923af95dc3b41d52`; llama.cpp submodule `b9878`; `GGML_VULKAN=ON`, `GGML_CPU=ON`, `GGML_BACKEND_DL=OFF`, `BUILD_SHARED_LIBS=ON`.
 
 Ни APK-сборка, ни запуск на Android-устройстве в этой среде не выполнялись. Для получения APK требуется GitHub Actions. Это нужно явно сохранять в любых заметках до фактического успешного Actions run.
+
+## Исправление GitHub Actions v12
+
+Для `android-actions/setup-android@v4` параметр `accept-android-sdk-licenses` задан YAML-boolean `true`, а не строкой `yes`. Action валидирует значение только как `true/false`; поэтому предыдущий workflow завершался ошибкой разбора input после скачивания command-line tools. Установку `platform-tools` и версию command-line tools оставили без изменений.
