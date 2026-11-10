@@ -1,0 +1,185 @@
+{
+  "artifact": "llama-android Vulkan-enabled native runtime",
+  "abi": "arm64-v8a",
+  "ndk_version": "27.2.12479018",
+  "upstream_repository": "https://github.com/ffmpegkit-maintained/llama-android",
+  "upstream_commit": "9f5469fd9fa7ea7bc7b01801923af95dc3b41d52",
+  "llama_cpp_submodule_commit": "2da668617612d2df773f966e3b0ee22dc2beef7b",
+  "llama_cpp_submodule_describe": "b9878",
+  "cmake_options_required": {
+    "GGML_VULKAN": "ON",
+    "GGML_CPU": "ON",
+    "GGML_BACKEND_DL": "OFF",
+    "BUILD_SHARED_LIBS": "ON"
+  },
+  "backend_link_mode": "ordinary shared backend dependencies linked by libggml.so; GGML_BACKEND_DL=OFF, no dlopen plugin scan",
+  "vulkan_include_dir": "/home/runner/work/_temp/Vulkan-Headers/include",
+  "vulkan_headers_commit": "b379292b2ab6df5771ba9870d53cf8b2c9295daf",
+  "vulkan_cpp_header": "/home/runner/work/_temp/Vulkan-Headers/include/vulkan/vulkan.hpp",
+  "spirv_headers_commit": "2acb319af38d43be3ea76bfabf3998e5281d8d12",
+  "spirv_headers_include_dir": "/home/runner/work/_temp/spirv-headers-install/include",
+  "spirv_cpp_header": "/home/runner/work/_temp/spirv-headers-install/include/spirv/unified1/spirv.hpp",
+  "vulkan_loader_library": "Android NDK system Vulkan stub (not bundled)",
+  "glslc": "/usr/bin/glslc",
+  "spirv_headers_dir": "/home/runner/work/_temp/spirv-headers-install/share/cmake/SPIRV-Headers",
+  "verification_mode": "effective CMakeCache + Vulkan/CPU Ninja targets + ARM64 ELF DT_NEEDED",
+  "cmake_cache_records": [
+    {
+      "path": "upstream/llama-android/library/.cxx/RelWithDebInfo/5j4l675o/arm64-v8a/CMakeCache.txt",
+      "GGML_VULKAN": "ON",
+      "GGML_CPU": "ON",
+      "GGML_BACKEND_DL": "OFF",
+      "BUILD_SHARED_LIBS": "ON",
+      "Vulkan_INCLUDE_DIR": "/home/runner/work/_temp/Vulkan-Headers/include",
+      "SPIRV_HEADERS_INCLUDE_DIR": "/home/runner/work/_temp/spirv-headers-install/include"
+    },
+    {
+      "path": "upstream/llama-android/library/.cxx/RelWithDebInfo/5j4l675o/arm64-v8a/llama.cpp/ggml/src/ggml-vulkan/vulkan-shaders-gen-prefix/src/vulkan-shaders-gen-build/CMakeCache.txt",
+      "GGML_VULKAN": "<unset>",
+      "GGML_CPU": "<unset>",
+      "GGML_BACKEND_DL": "<unset>",
+      "BUILD_SHARED_LIBS": "<unset>",
+      "Vulkan_INCLUDE_DIR": "<unset>",
+      "SPIRV_HEADERS_INCLUDE_DIR": "<unset>"
+    }
+  ],
+  "ninja_graphs_with_ggml_vulkan": [
+    "upstream/llama-android/library/.cxx/RelWithDebInfo/5j4l675o/arm64-v8a/build.ninja",
+    "upstream/llama-android/library/.cxx/RelWithDebInfo/5j4l675o/arm64-v8a/llama.cpp/ggml/src/ggml-vulkan/vulkan-shaders-gen-prefix/src/vulkan-shaders-gen-build/build.ninja"
+  ],
+  "ninja_graphs_with_ggml_cpu": [
+    "upstream/llama-android/library/.cxx/RelWithDebInfo/5j4l675o/arm64-v8a/build.ninja"
+  ],
+  "gradle_jni_cmake_build_log_flags": {
+    "GGML_VULKAN": {
+      "gradle": true,
+      "build_log": true,
+      "jni_cmake_force": true
+    },
+    "GGML_CPU": {
+      "gradle": true,
+      "build_log": true,
+      "jni_cmake_force": true
+    },
+    "GGML_BACKEND_DL": {
+      "gradle": true,
+      "build_log": true,
+      "jni_cmake_force": true
+    },
+    "BUILD_SHARED_LIBS": {
+      "gradle": true,
+      "build_log": true,
+      "jni_cmake_force": true
+    }
+  },
+  "backend_libraries_injected_from_same_build": [],
+  "libggml_dt_needed": [
+    "libggml-cpu.so",
+    "libggml-vulkan.so",
+    "libggml-base.so",
+    "libm.so",
+    "libc++_shared.so",
+    "libdl.so",
+    "libc.so"
+  ],
+  "libggml_vulkan_dt_needed": [
+    "libggml-base.so",
+    "libvulkan.so",
+    "libm.so",
+    "libc++_shared.so",
+    "libdl.so",
+    "libc.so"
+  ],
+  "native_libraries": {
+    "libc++_shared.so": {
+      "sha256": "4397241b4bd20a8e579bfb41d21107857e12985f6a01ca0c2a5f83380d1270b4",
+      "needed": [
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ],
+      "size_bytes": 1292904
+    },
+    "libggml-base.so": {
+      "sha256": "ef98879195b8dca29c6bcea2c8637c5b0352297dcac6b4646d0b0ec5317bb493",
+      "needed": [
+        "libm.so",
+        "libdl.so",
+        "libc++_shared.so",
+        "libc.so"
+      ],
+      "size_bytes": 673168
+    },
+    "libggml-cpu.so": {
+      "sha256": "523903e4efe8b3dc68c437a934ab1d78899ac26ce06a6378bce76ab59524c1f8",
+      "needed": [
+        "libggml-base.so",
+        "libm.so",
+        "libc++_shared.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "size_bytes": 718608
+    },
+    "libggml-vulkan.so": {
+      "sha256": "2955c55883ad63515b737deb9121ef8c1af68d14f99fd999f51ab9d3fc0e35e0",
+      "needed": [
+        "libggml-base.so",
+        "libvulkan.so",
+        "libm.so",
+        "libc++_shared.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "size_bytes": 40395856
+    },
+    "libggml.so": {
+      "sha256": "8559da1ab7c94bbd9256c0cbb9c45c7954b10c360d8b667ba10f6f6cb68c27bc",
+      "needed": [
+        "libggml-cpu.so",
+        "libggml-vulkan.so",
+        "libggml-base.so",
+        "libm.so",
+        "libc++_shared.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "size_bytes": 58952
+    },
+    "libllama.so": {
+      "sha256": "c7c9d65d5536e9f14d98fb736ba27fb12250a609e836468e14ff1b1bb0430844",
+      "needed": [
+        "libggml.so",
+        "libggml-cpu.so",
+        "libggml-vulkan.so",
+        "libggml-base.so",
+        "libm.so",
+        "libc++_shared.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "size_bytes": 2761944
+    },
+    "libllama_jni.so": {
+      "sha256": "667f1ee6693c7364ca6e120d981a2d75591d3467323915e1f74ba8cfce800a68",
+      "needed": [
+        "libllama.so",
+        "liblog.so",
+        "libggml.so",
+        "libggml-cpu.so",
+        "libggml-vulkan.so",
+        "libggml-base.so",
+        "libm.so",
+        "libc++_shared.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "size_bytes": 43920
+    }
+  },
+  "aar": {
+    "name": "library-release.aar",
+    "sha256": "b2a15a3e297b4107575df52711a86e6a53e1a14fff497db5acb1837abe1f49bb",
+    "size_bytes": 14625114
+  }
+}
