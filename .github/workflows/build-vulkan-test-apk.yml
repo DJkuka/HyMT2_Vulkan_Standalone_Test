@@ -38,14 +38,15 @@ jobs:
 
       - name: Fetch pinned llama-android JNI wrapper
         run: |
-          git clone https://github.com/ffmpegkit-maintained/llama-android.git /tmp/llama-android
+          git clone --no-recurse-submodules https://github.com/ffmpegkit-maintained/llama-android.git /tmp/llama-android
           git -C /tmp/llama-android checkout 9f5469fd9fa7ea7bc7b01801923af95dc3b41d52
-          git -C /tmp/llama-android submodule update --init --depth 1 llama.cpp
-          git -C /tmp/llama-android/llama.cpp fetch --depth 10 https://github.com/sjl623/llama.cpp.git 1e411d8f5a1e23525fa3265dfb4bd76265465397
-          git -C /tmp/llama-android/llama.cpp checkout FETCH_HEAD
+          rm -rf /tmp/llama-android/llama.cpp
+          mkdir -p /tmp/llama-android/llama.cpp
+          curl --fail --location --retry 3 https://codeload.github.com/sjl623/llama.cpp/tar.gz/1e411d8f5a1e23525fa3265dfb4bd76265465397 | tar -xz --strip-components=1 -C /tmp/llama-android/llama.cpp
+          test -f /tmp/llama-android/llama.cpp/ggml/src/ggml-cpu/arch/arm/quants.c
+          grep -q "GGML_TYPE_STQ1_0" /tmp/llama-android/llama.cpp/ggml/include/ggml.h
           echo "Wrapper commit: $(git -C /tmp/llama-android rev-parse HEAD)"
-          echo "llama.cpp STQ commit: $(git -C /tmp/llama-android/llama.cpp rev-parse HEAD)"
-          test "$(git -C /tmp/llama-android/llama.cpp rev-parse HEAD)" = "1e411d8f5a1e23525fa3265dfb4bd76265465397"
+          echo "llama.cpp source pinned to STQ commit: 1e411d8f5a1e23525fa3265dfb4bd76265465397"
 
       - name: Build CPU-only STQ1_0 Android AAR
         working-directory: /tmp/llama-android
