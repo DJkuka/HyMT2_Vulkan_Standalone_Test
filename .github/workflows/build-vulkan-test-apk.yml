@@ -49,8 +49,6 @@ jobs:
 
       - name: Build CPU-only STQ1_0 Android AAR
         working-directory: /tmp/llama-android
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         run: |
           gradle --no-daemon :library:assembleRelease \
             -Pandroid.native.buildOutput=verbose
