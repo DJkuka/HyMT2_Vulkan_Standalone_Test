@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.hymt2vulkantest"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0-vulkan"
+        versionCode = 3
+        versionName = "0.3.0-stq1-cpu"
         ndk { abiFilters += "arm64-v8a" }
     }
 
@@ -39,7 +39,7 @@ dependencies {
     // Locally-built ARM64 AAR with GGML_VULKAN=ON and GGML_CPU=ON.
     // Do not add the Maven CPU-only llama-android artifact here: it would
     // duplicate the same dev.ffmpegkit.llama classes and native library names.
-    implementation(files("libs/llama-android-vulkan.aar"))
+    implementation(files("libs/llama-android-stq1-cpu.aar"))
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }
