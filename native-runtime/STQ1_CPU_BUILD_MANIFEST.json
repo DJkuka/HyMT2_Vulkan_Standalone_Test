@@ -1,0 +1,27 @@
+{
+  "project": "Hy-MT2 STQ1_0 CPU benchmark",
+  "model": "Tencent/Hy-MT2-1.8B-1.25Bit-GGUF/Hy-MT2-1.8B-1.25Bit.gguf",
+  "quantization": "STQ1_0",
+  "ggml_type_id": 43,
+  "model_file_size_bytes": 461860800,
+  "model_sha256": "cc497fe8f033b52b3b8b00a7669e9661435432f9d4cd43f7ed24400c01507a93",
+  "llama_cpp_repository": "https://github.com/sjl623/llama.cpp",
+  "llama_cpp_pr": 22836,
+  "llama_cpp_commit": "1e411d8f5a1e23525fa3265dfb4bd76265465397",
+  "llama_cpp_pr_base": "74ce15741b420b8d6f12e720398458b576c51c2c",
+  "android_jni_wrapper_repository": "https://github.com/ffmpegkit-maintained/llama-android",
+  "android_jni_wrapper_commit": "9f5469fd9fa7ea7bc7b01801923af95dc3b41d52",
+  "abi": "arm64-v8a",
+  "backend": "CPU / ARM NEON only",
+  "ggml_vulkan": false,
+  "ggml_openmp": false,
+  "default_threads": 6,
+  "default_context": 2048,
+  "default_output_tokens": 768,
+  "sampling": {"temperature": 0.7, "top_p": 0.6, "top_k": 20, "seed": 42},
+  "notes": [
+    "STQ1_0 support is pinned to open llama.cpp PR #22836, not assumed to exist upstream.",
+    "STQ1_0 uses 42 bytes per 256 weights (about 1.3125 bpw); 1.25Bit is the model filename label.",
+    "The app opens the GGUF through SAF and /proc/self/fd; it does not bundle or copy the model."
+  ]
+}
