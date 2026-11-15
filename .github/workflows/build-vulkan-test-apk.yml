@@ -1,18 +1,18 @@
-name: Build Hy-MT2 Vulkan standalone test APK
+name: Build Hy-MT2 STQ1_0 CPU benchmark APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ hy-mt2-stq1-cpu-benchmark ]
 
 permissions:
   contents: read
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
+      - name: Checkout benchmark app
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -27,48 +27,82 @@ jobs:
           packages: 'platform-tools'
           accept-android-sdk-licenses: true
 
-      - name: Install Android platform and build tools
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Install Android platform, NDK and CMake
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Verify standalone test project
-        run: python3 scripts/test_standalone_project.py
-
-      - name: Verify downloaded Vulkan runtime AAR
+      - name: Fetch pinned llama-android JNI wrapper
         run: |
-          python3 scripts/verify_vulkan_runtime.py \
-            --aar app/libs/llama-android-vulkan.aar \
-            --manifest native-runtime/BUILD_MANIFEST.json
+          git clone https://github.com/ffmpegkit-maintained/llama-android.git /tmp/llama-android
+          git -C /tmp/llama-android checkout 9f5469fd9fa7ea7bc7b01801923af95dc3b41d52
+          git -C /tmp/llama-android submodule update --init --depth 1 llama.cpp
+          git -C /tmp/llama-android/llama.cpp fetch --depth 10 https://github.com/sjl623/llama.cpp.git 1e411d8f5a1e23525fa3265dfb4bd76265465397
+          git -C /tmp/llama-android/llama.cpp checkout FETCH_HEAD
+          echo "Wrapper commit: $(git -C /tmp/llama-android rev-parse HEAD)"
+          echo "llama.cpp STQ commit: $(git -C /tmp/llama-android/llama.cpp rev-parse HEAD)"
+          test "$(git -C /tmp/llama-android/llama.cpp rev-parse HEAD)" = "1e411d8f5a1e23525fa3265dfb4bd76265465397"
 
-      - name: Build standalone test APK
+      - name: Build CPU-only STQ1_0 Android AAR
+        working-directory: /tmp/llama-android
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+        run: |
+          gradle --no-daemon :library:assembleRelease \
+            -Pandroid.native.buildOutput=verbose
+          mkdir -p "$GITHUB_WORKSPACE/app/libs"
+          cp library/build/outputs/aar/library-release.aar \
+            "$GITHUB_WORKSPACE/app/libs/llama-android-stq1-cpu.aar"
+          sha256sum "$GITHUB_WORKSPACE/app/libs/llama-android-stq1-cpu.aar"
+
+      - name: Verify STQ1_0 CPU AAR
+        run: |
+          python3 - <<'PY'
+          import hashlib, zipfile
+          p = "app/libs/llama-android-stq1-cpu.aar"
+          with zipfile.ZipFile(p) as z:
+              names = z.namelist()
+              libs = [n for n in names if n.endswith(".so") and "/arm64-v8a/" in n]
+              required = ["libllama_jni.so", "libllama.so", "libggml.so", "libggml-base.so", "libggml-cpu.so", "libc++_shared.so"]
+              found = {n.rsplit("/", 1)[-1] for n in libs}
+              missing = sorted(set(required) - found)
+              assert not missing, f"Missing ARM64 native libs: {missing}; found={sorted(found)}"
+              assert not any("vulkan" in n.lower() for n in libs), f"Unexpected Vulkan library in CPU-only AAR: {libs}"
+              for n in libs:
+                  data = z.read(n)
+                  if n.endswith("libggml-cpu.so"):
+                      assert b"stq1_0" in data.lower(), "STQ1_0 marker missing from libggml-cpu.so"
+                  print(n, len(data), hashlib.sha256(data).hexdigest())
+          print("STQ1_0 CPU AAR verification passed")
+          PY
+
+      - name: Build standalone benchmark APK
         run: gradle --no-daemon :app:assembleDebug
 
-      - name: Verify APK native libraries
+      - name: Verify APK alignment and native libraries
         run: |
-          python3 scripts/verify_test_apk.py \
-            --apk app/build/outputs/apk/debug/app-debug.apk \
-            --manifest native-runtime/BUILD_MANIFEST.json
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -v 4 app/build/outputs/apk/debug/app-debug.apk
           sha256sum app/build/outputs/apk/debug/app-debug.apk
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep 'lib/arm64-v8a/'
 
-      - name: Upload test APK
+      - name: Upload STQ1_0 CPU benchmark APK
         uses: actions/upload-artifact@v4
         with:
-          name: HyMT2-Vulkan-Standalone-Test-debug
+          name: HyMT2-STQ1-CPU-Benchmark-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload runtime verification data
+      - name: Upload runtime manifest
         uses: actions/upload-artifact@v4
         with:
-          name: HyMT2-Vulkan-Runtime-Verification
+          name: HyMT2-STQ1-CPU-Runtime-Manifest
           path: |
-            native-runtime/BUILD_MANIFEST.json
-            native-runtime/README_RUNTIME_RU.txt
-          if-no-files-found: error
+            app/libs/llama-android-stq1-cpu.aar
+            native-runtime/STQ1_CPU_BUILD_MANIFEST.json
+          if-no-files-found: warn
           retention-days: 14
