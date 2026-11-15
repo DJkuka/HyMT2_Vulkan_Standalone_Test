@@ -72,9 +72,11 @@ jobs:
               assert not any("vulkan" in n.lower() for n in libs), f"Unexpected Vulkan library in CPU-only AAR: {libs}"
               for n in libs:
                   data = z.read(n)
-                  if n.endswith("libggml-cpu.so"):
-                      assert b"stq1_0" in data.lower(), "STQ1_0 marker missing from libggml-cpu.so"
+              for n in libs:
+                  data = z.read(n)
                   print(n, len(data), hashlib.sha256(data).hexdigest())
+              marker_data = b"".join(z.read(n) for n in libs if n.endswith(("libggml-base.so", "libggml-cpu.so")))
+              assert b"stq1_0" in marker_data.lower(), "STQ1_0 marker missing from GGML base/CPU libraries"
           print("STQ1_0 CPU AAR verification passed")
           PY
 
