@@ -11,6 +11,7 @@ from pathlib import Path
 EXPECTED = {
     "libc++_shared.so", "libggml-base.so", "libggml-cpu.so",
     "libggml-vulkan.so", "libggml.so", "libllama.so", "libllama_jni.so",
+    "libcpuaffinity.so",
 }
 
 
@@ -35,10 +36,16 @@ def main() -> int:
             data = zf.read(entry)
             if data[:4] != b"\x7fELF" or data[4] != 2 or struct.unpack_from("<H", data, 18)[0] != 183:
                 raise SystemExit(f"Invalid ARM64 ELF in APK: {name}")
-            expected = manifest["native_libraries"][name]["sha256"]
-            actual = hashlib.sha256(data).hexdigest()
-            if actual != expected:
-                raise SystemExit(f"APK changed native runtime payload: {name}")
+            # libcpuaffinity.so is the small app-owned JNI helper added by this
+            # test revision; the immutable Vulkan runtime libraries remain
+            # byte-for-byte pinned by BUILD_MANIFEST.json.
+            if name in manifest["native_libraries"]:
+                expected = manifest["native_libraries"][name]["sha256"]
+                actual = hashlib.sha256(data).hexdigest()
+                if actual != expected:
+                    raise SystemExit(f"APK changed native runtime payload: {name}")
+            elif name != "libcpuaffinity.so":
+                raise SystemExit(f"Unexpected unpinned native library: {name}")
         if "classes.dex" not in names:
             raise SystemExit("APK has no classes.dex")
     print("Standalone APK verified: all Vulkan/CPU ARM64 libraries are packaged intact.")
