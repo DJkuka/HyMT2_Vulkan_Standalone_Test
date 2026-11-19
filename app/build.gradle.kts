@@ -15,6 +15,12 @@ android {
         versionCode = 2
         versionName = "0.2.0-vulkan"
         ndk { abiFilters += "arm64-v8a" }
+
+        externalNativeBuild {
+            cmake {
+                arguments += "-DANDROID_STL=c++_static"
+            }
+        }
     }
 
     compileOptions {
@@ -32,7 +38,6 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            arguments += "-DANDROID_STL=c++_static"
         }
     }
 
