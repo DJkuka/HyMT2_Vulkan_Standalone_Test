@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(cpuaffinity LANGUAGES CXX)
+add_library(cpuaffinity SHARED cpuaffinity.cpp)
+target_compile_features(cpuaffinity PRIVATE cxx_std_17)
+target_compile_options(cpuaffinity PRIVATE -Wall -Wextra)

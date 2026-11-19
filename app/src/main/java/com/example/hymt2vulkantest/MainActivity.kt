@@ -14,6 +14,9 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.CheckBox
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -33,6 +36,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 import kotlin.math.min
+import org.json.JSONObject
 
 /**
  * Standalone test host for the Vulkan-enabled llama-android AAR.
@@ -53,6 +57,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var loadButton: Button
     private lateinit var translateButton: Button
     private lateinit var unloadButton: Button
+    private lateinit var cpuInfo: TextView
+    private lateinit var cpuChecks: LinearLayout
+    private lateinit var affinityModes: RadioGroup
+    private val cpuBoxes = linkedMapOf<Int, CheckBox>()
+    private var onlineMask = 0L
+    private var fastMask = 0L
 
     private var modelDescriptor: ParcelFileDescriptor? = null
     private var modelPath: String? = null
@@ -89,6 +99,7 @@ class MainActivity : ComponentActivity() {
             append(info)
         }
         Log.i(TAG, "Native runtime initialized. ABI=${Build.SUPPORTED_ABIS.joinToString()} info=$info")
+        buildCpuControls()
         status.text = "Vulkan runtime подключён. Для первого сравнения начни с CPU, затем выгрузи модель и выбери Vulkan · 2 layers."
     }
 
@@ -126,6 +137,30 @@ class MainActivity : ComponentActivity() {
         threadsSpinner = spinner(threadChoices.map { "$it" })
         threadsSpinner.setSelection(threadChoices.indexOf(defaultThreads).coerceAtLeast(0))
         root.addView(threadsSpinner, match())
+
+        addLabel(root, "CPU affinity · привязка вычислительных потоков")
+        cpuInfo = TextView(this).apply { textSize = 12f; setTextIsSelectable(true) }
+        root.addView(cpuInfo, match())
+        affinityModes = RadioGroup(this).apply {
+            orientation = RadioGroup.VERTICAL
+            addView(RadioButton(this@MainActivity).apply {
+                id = MODE_SYSTEM
+                text = "Без ручной привязки · системный планировщик"
+                isChecked = true
+            })
+            addView(RadioButton(this@MainActivity).apply {
+                id = MODE_PERFORMANCE
+                text = "Только производительные ядра (авто)"
+            })
+            addView(RadioButton(this@MainActivity).apply {
+                id = MODE_CUSTOM
+                text = "Произвольный выбор ядер"
+            })
+        }
+        root.addView(affinityModes, match())
+        cpuChecks = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(cpuChecks, match())
+        affinityModes.setOnCheckedChangeListener { _, _ -> refreshCpuMode() }
 
         modelLabel = TextView(this).apply {
             text = "Модель не выбрана. Нужен Hy-MT2-1.8B-Q4_K_M.gguf."
@@ -213,6 +248,64 @@ class MainActivity : ComponentActivity() {
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.WRAP_CONTENT,
     ).apply { bottomMargin = (7 * resources.displayMetrics.density).toInt() }
+
+    private fun buildCpuControls() {
+        try {
+            val data = JSONObject(CpuAffinity.topologyJson()).getJSONArray("cpus")
+            cpuChecks.removeAllViews()
+            cpuBoxes.clear()
+            onlineMask = 0L
+            fastMask = 0L
+            val labels = mutableListOf<String>()
+            for (i in 0 until data.length()) {
+                val c = data.getJSONObject(i)
+                val id = c.getInt("id")
+                if (!c.optBoolean("online") || id !in 0..63) continue
+                onlineMask = onlineMask or (1L shl id)
+                val fast = c.optBoolean("performance")
+                if (fast) fastMask = fastMask or (1L shl id)
+                val freq = c.optLong("maxFreqKhz")
+                val label = "CPU $id · " + (if (fast) "производительное" else "энергоэффективное") +
+                    (if (freq > 0) " · ${freq / 1000} МГц" else "")
+                val box = CheckBox(this).apply {
+                    text = label
+                    isChecked = fast
+                    setOnCheckedChangeListener { _, _ -> refreshCpuMode() }
+                }
+                cpuBoxes[id] = box
+                cpuChecks.addView(box)
+                labels.add("CPU$id")
+            }
+            cpuInfo.text = "Обнаружены: ${labels.joinToString()}\n" +
+                (if (fastMask != 0L) "Производительный кластер: ${maskText(fastMask)}"
+                 else "Кластер не определён по sysfs. Номера ядер не угадываются.")
+            refreshCpuMode()
+        } catch (t: Throwable) {
+            cpuInfo.text = "Ошибка определения CPU: ${t.message ?: t.javaClass.simpleName}"
+        }
+    }
+
+    private fun selectedMask(): Long {
+        if (affinityModes.checkedRadioButtonId == MODE_SYSTEM) return 0L
+        if (affinityModes.checkedRadioButtonId == MODE_PERFORMANCE)
+            return fastMask // If topology is unknown, leave scheduling to Android.
+        var mask = 0L
+        cpuBoxes.forEach { (id, box) -> if (box.isChecked) mask = mask or (1L shl id) }
+        return if (mask != 0L) mask else onlineMask
+    }
+
+    private fun maskText(mask: Long): String = if (mask == 0L) "системный планировщик" else
+        (0..63).filter { (mask and (1L shl it)) != 0L }.joinToString(prefix = "{", postfix = "}")
+
+    private fun refreshCpuMode() {
+        if (!::cpuChecks.isInitialized || !::affinityModes.isInitialized) return
+        cpuChecks.visibility = if (affinityModes.checkedRadioButtonId == MODE_CUSTOM)
+            android.view.View.VISIBLE else android.view.View.GONE
+        if (::cpuInfo.isInitialized) {
+            cpuInfo.text = cpuInfo.text.toString().substringBefore("\nВыбранная маска:") +
+                "\nВыбранная маска: ${maskText(selectedMask())}"
+        }
+    }
 
     private fun prepareModel(uri: Uri) {
         if (busy || loadedModel != null) return
@@ -310,19 +403,25 @@ class MainActivity : ComponentActivity() {
 
         uiScope.launch {
             try {
-                val loaded = Llama.loadModel(
-                    modelPath = path,
-                    config = LlamaConfig(
-                        contextSize = context,
-                        threads = threads,
-                        gpuLayers = layers,
-                        temperature = 0.7f,
-                        topP = 0.6f,
-                        topK = 20,
-                    ),
-                )
+                val mask = selectedMask()
+                val loadReport = withContext(Dispatchers.IO) {
+                    val affinity = CpuAffinity.setAffinityForAllThreads(mask)
+                    val loaded = Llama.loadModel(
+                        modelPath = path,
+                        config = LlamaConfig(
+                            contextSize = context,
+                            threads = threads,
+                            gpuLayers = layers,
+                            temperature = 0.7f,
+                            topP = 0.6f,
+                            topK = 20,
+                        ),
+                    )
+                    Pair(loaded, affinity)
+                }
+                val loaded = loadReport.first
                 loadedModel = loaded
-                status.text = "Модель загружена. Запрошен backend: $backend.\nТеперь выполни перевод. Для смены backend сначала выгрузи модель."
+                status.text = "Модель загружена. Запрошен backend: $backend.\nAffinity: ${loadReport.second}\nТеперь выполни перевод. Для смены backend сначала выгрузи модель."
                 Log.i(TAG, "loadModel success backend=$backend context=$context threads=$threads")
                 translateButton.isEnabled = true
                 unloadButton.isEnabled = true
@@ -364,14 +463,20 @@ class MainActivity : ComponentActivity() {
                 val prompt = """Translate the following text into Russian. Output only the translated result without explanations:
 
 $source""".trimIndent()
-                val result = Llama.complete(
-                    model = model,
-                    prompt = prompt,
-                    systemPrompt = "You are a professional English-to-Russian comic translator. Use natural idiomatic Russian. Preserve speaker tone, humor, sarcasm, names and meaning. Do not add explanations.",
-                    maxTokens = 512,
-                )
+                val mask = selectedMask()
+                val pair = withContext(Dispatchers.IO) {
+                    val affinity = CpuAffinity.setAffinityForAllThreads(mask)
+                    val result = Llama.complete(
+                        model = model,
+                        prompt = prompt,
+                        systemPrompt = "You are a professional English-to-Russian comic translator. Use natural idiomatic Russian. Preserve speaker tone, humor, sarcasm, names and meaning. Do not add explanations.",
+                        maxTokens = 512,
+                    )
+                    Pair(result, affinity)
+                }
+                val result = pair.first
                 resultView.text = result.text.trim()
-                status.text = String.format(
+                status.text = "Affinity: ${pair.second}\n" + String.format(
                     Locale.US,
                     "Готово · %d токенов · %.2f ток/с · prompt %d мс · генерация %d мс",
                     result.tokensGenerated,
@@ -458,6 +563,9 @@ $source""".trimIndent()
     }
 
     companion object {
+        private const val MODE_SYSTEM = 2001
+        private const val MODE_PERFORMANCE = 2002
+        private const val MODE_CUSTOM = 2003
         private const val TAG = "HyMT2VKTest"
         private const val MIN_MODEL_BYTES = 100L * 1024 * 1024
     }

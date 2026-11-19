@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "com.example.hymt2vulkantest"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "com.example.hymt2vulkantest"
@@ -26,6 +27,10 @@ android {
     buildTypes {
         debug { isMinifyEnabled = false }
         release { isMinifyEnabled = false }
+    }
+
+    externalNativeBuild {
+        cmake { path = file("src/main/cpp/CMakeLists.txt") }
     }
 
     packaging {
