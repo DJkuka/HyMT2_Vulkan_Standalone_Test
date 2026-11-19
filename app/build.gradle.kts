@@ -30,7 +30,10 @@ android {
     }
 
     externalNativeBuild {
-        cmake { path = file("src/main/cpp/CMakeLists.txt") }
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            arguments += "-DANDROID_STL=c++_static"
+        }
     }
 
     packaging {
